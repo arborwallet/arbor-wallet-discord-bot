@@ -59,7 +59,9 @@ client.on('interactionCreate', async (interaction) => {
                     let dm;
                     try {
                         dm = await interaction.user.createDM();
-                        await dm.send(
+                        await (dm.id === interaction.channelId
+                            ? interaction.reply.bind(interaction)
+                            : dm.send.bind(dm))(
                             'What password do you want to use for this wallet?'
                         );
                     } catch {
@@ -67,9 +69,11 @@ client.on('interactionCreate', async (interaction) => {
                             'Could not open your direct messages.'
                         );
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.reply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
                     let password;
                     try {
                         const result = await dm.awaitMessages({
@@ -182,7 +186,9 @@ client.on('interactionCreate', async (interaction) => {
                     let dm;
                     try {
                         dm = await interaction.user.createDM();
-                        await dm.send(
+                        await (dm.id === interaction.channelId
+                            ? interaction.reply.bind(interaction)
+                            : dm.send.bind(dm))(
                             `What is the password for the ${wallet.name} wallet?`
                         );
                     } catch {
@@ -190,9 +196,11 @@ client.on('interactionCreate', async (interaction) => {
                             'Could not open your direct messages.'
                         );
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.reply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
                     let password;
                     try {
                         const result = await dm.awaitMessages({
@@ -243,7 +251,9 @@ client.on('interactionCreate', async (interaction) => {
                     let dm;
                     try {
                         dm = await interaction.user.createDM();
-                        await dm.send(
+                        await (dm.id === interaction.channelId
+                            ? interaction.reply.bind(interaction)
+                            : dm.send.bind(dm))(
                             'What is the mnemonic phrase you would like to recover?'
                         );
                     } catch {
@@ -251,9 +261,11 @@ client.on('interactionCreate', async (interaction) => {
                             'Could not open your direct messages.'
                         );
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.reply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
                     let phrase;
                     try {
                         const result = await dm.awaitMessages({
@@ -370,10 +382,14 @@ client.on('interactionCreate', async (interaction) => {
                             'Could not open your direct messages.'
                         );
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
-                    const message = await dm.send({
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.reply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
+                    const message = await (dm.id === interaction.channelId
+                        ? interaction.reply.bind(interaction)
+                        : dm.send.bind(dm))({
                         content: 'Select which wallet to use.',
                         components: [
                             {
@@ -404,7 +420,7 @@ client.on('interactionCreate', async (interaction) => {
                     });
                     if (!(newInteraction instanceof SelectMenuInteraction))
                         return;
-                    await message.edit({
+                    await (message ? message.edit : interaction.editReply)({
                         components: [
                             {
                                 type: 'ACTION_ROW',
@@ -447,10 +463,12 @@ client.on('interactionCreate', async (interaction) => {
                         'SELECT * FROM `wallets` WHERE `id` = (SELECT `wallet` FROM `users` WHERE `id` = ?)',
                         [interaction.user.id]
                     )) as any;
-                    if (!wallet)
+                    if (!wallet) {
                         return await interaction.reply(
                             'No wallet is currently selected.'
                         );
+                    }
+                    await interaction.deferReply();
                     const {
                         data: { success: balanceSuccess, balance, fork },
                     } = await axios.get(
@@ -463,22 +481,29 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
-                    if (!balanceSuccess)
-                        return await interaction.reply(
+                    if (!balanceSuccess) {
+                        await interaction.editReply(
                             'Could not fetch the balance.'
                         );
+                        return;
+                    }
                     let dm;
                     try {
                         dm = await interaction.user.createDM();
                     } catch {
-                        return await interaction.reply(
+                        await interaction.editReply(
                             'Could not open your direct messages.'
                         );
+                        return;
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
-                    await dm.send(
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.editReply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
+                    await (dm.id !== interaction.channelId
+                        ? dm.send.bind(dm)
+                        : interaction.editReply.bind(interaction))(
                         `Your wallet currently has ${(
                             balance *
                             10 ** -fork.precision
@@ -505,10 +530,14 @@ client.on('interactionCreate', async (interaction) => {
                             'Could not open your direct messages.'
                         );
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
-                    await dm.send(
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.reply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
+                    await (dm.id !== interaction.channelId
+                        ? dm.send.bind(dm)
+                        : interaction.reply.bind(interaction))(
                         `Your receive address for this wallet: ${wallet.address}`
                     );
                     break;
@@ -518,10 +547,12 @@ client.on('interactionCreate', async (interaction) => {
                         'SELECT * FROM `wallets` WHERE `id` = (SELECT `wallet` FROM `users` WHERE `id` = ?)',
                         [interaction.user.id]
                     )) as any;
-                    if (!wallet)
+                    if (!wallet) {
                         return await interaction.reply(
                             'No wallet is currently selected.'
                         );
+                    }
+                    await interaction.deferReply();
                     const {
                         data: {
                             success: transactionsSuccess,
@@ -538,14 +569,18 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
-                    if (!transactionsSuccess)
-                        return await interaction.reply(
+                    if (!transactionsSuccess) {
+                        await interaction.editReply(
                             'Could not fetch the transactions.'
                         );
-                    if (!transactions.length)
-                        return await interaction.reply(
+                        return;
+                    }
+                    if (!transactions.length) {
+                        await interaction.reply(
                             'There are no transactions on this wallet yet.'
                         );
+                        return;
+                    }
                     const pages: any[][] = [[]];
                     for (const transaction of transactions) {
                         let page = pages[pages.length - 1];
@@ -584,14 +619,21 @@ client.on('interactionCreate', async (interaction) => {
                     try {
                         dm = await interaction.user.createDM();
                     } catch {
-                        return await interaction.reply(
+                        await interaction.editReply(
                             'Could not open your direct messages.'
                         );
+                        return;
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.editReply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
+                    await (dm.id !== interaction.channelId
+                        ? dm.send.bind(dm)
+                        : interaction.editReply.bind(interaction))(
+                        makePage(page)
                     );
-                    await dm.send(makePage(page));
                     break;
                 }
                 case 'send': {
@@ -615,7 +657,9 @@ client.on('interactionCreate', async (interaction) => {
                     let dm;
                     try {
                         dm = await interaction.user.createDM();
-                        await dm.send(
+                        await (dm.id !== interaction.channelId
+                            ? dm.send.bind(dm)
+                            : interaction.reply.bind(interaction))(
                             `What is the password for the ${wallet.name} wallet?`
                         );
                     } catch {
@@ -623,9 +667,11 @@ client.on('interactionCreate', async (interaction) => {
                             'Could not open your direct messages.'
                         );
                     }
-                    await interaction.reply(
-                        'Check your direct messages to continue.'
-                    );
+                    if (dm.id !== interaction.channelId) {
+                        await interaction.reply(
+                            'Check your direct messages to continue.'
+                        );
+                    }
                     let password;
                     try {
                         const result = await dm.awaitMessages({
