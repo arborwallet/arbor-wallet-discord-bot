@@ -91,14 +91,23 @@ client.on('interactionCreate', async (interaction) => {
                         return;
                     }
                     const {
-                        data: { phrase, private_key, public_key },
+                        data: {
+                            success: keygenSuccess,
+                            phrase,
+                            private_key,
+                            public_key,
+                        },
                     } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'https://localhost/api/v1'
                         }/keygen`
                     );
+                    if (!keygenSuccess) {
+                        await dm.send('Could not generate the keypair.');
+                        return;
+                    }
                     const {
-                        data: { address },
+                        data: { success: walletSuccess, address },
                     } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'https://localhost/api/v1'
@@ -110,6 +119,10 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
+                    if (!keygenSuccess) {
+                        await dm.send('Could not create the wallet.');
+                        return;
+                    }
                     const phraseMessage = await dm.send({
                         content: `Write this recovery phrase down somewhere then delete this message: ${phrase}`,
                         components: [
@@ -279,7 +292,11 @@ client.on('interactionCreate', async (interaction) => {
                         return;
                     }
                     const {
-                        data: { private_key, public_key },
+                        data: {
+                            success: recoverSuccess,
+                            private_key,
+                            public_key,
+                        },
                     } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'https://localhost/api/v1'
@@ -290,8 +307,12 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
+                    if (!recoverSuccess) {
+                        await dm.send('Could not recover the keypair.');
+                        return;
+                    }
                     const {
-                        data: { address },
+                        data: { success: walletSuccess, address },
                     } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'https://localhost/api/v1'
@@ -303,6 +324,10 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
+                    if (!walletSuccess) {
+                        await dm.send('Could not recover the wallet.');
+                        return;
+                    }
                     const [result]: any[] = await db.execute(
                         'INSERT INTO `wallets` (`user`, `name`, `address`, `private_key`, `public_key`, `password`) VALUES (?, ?, ?, ?, ?, ?)',
                         [
@@ -337,7 +362,18 @@ client.on('interactionCreate', async (interaction) => {
                         return await interaction.reply(
                             'You have not created an Arbor wallet.'
                         );
-                    await interaction.reply({
+                    let dm;
+                    try {
+                        dm = await interaction.user.createDM();
+                    } catch {
+                        return await interaction.reply(
+                            'Could not open your direct messages.'
+                        );
+                    }
+                    await interaction.reply(
+                        'Check your direct messages to continue.'
+                    );
+                    const message = await dm.send({
                         content: 'Select which wallet to use.',
                         components: [
                             {
@@ -361,61 +397,49 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         ],
                     });
-                    if (interaction.channel) {
-                        const newInteraction =
-                            await interaction.channel.awaitMessageComponent({
-                                filter: (newInteraction) =>
-                                    newInteraction.customId === 'wallet' &&
-                                    newInteraction.user.id ===
-                                        interaction.user.id,
-                            });
-                        if (!(newInteraction instanceof SelectMenuInteraction))
-                            return;
-                        await interaction.editReply({
-                            components: [
-                                {
-                                    type: 'ACTION_ROW',
-                                    components: [
-                                        {
-                                            type: 'SELECT_MENU',
-                                            customId: 'wallet',
-                                            placeholder: 'Select wallet',
-                                            options: wallets.map(
-                                                (wallet: any) => {
-                                                    return {
-                                                        label: wallet.name,
-                                                        value: wallet.name,
-                                                        default:
-                                                            wallet.name ===
-                                                            newInteraction
-                                                                .values[0],
-                                                        description:
-                                                            wallet.address,
-                                                    };
-                                                }
-                                            ),
-                                            disabled: true,
-                                        },
-                                    ],
-                                },
-                            ],
-                        });
-                        await newInteraction.reply(
-                            `Now using the wallet you selected: ${newInteraction.values[0]}`
-                        );
-                        const [[{ id }]]: [[{ id: number }]] =
-                            (await db.execute(
-                                'SELECT `id` FROM `wallets` WHERE `name` = ? AND `user` = ?',
-                                [
-                                    newInteraction.values[0],
-                                    newInteraction.user.id,
-                                ]
-                            )) as any;
-                        await db.execute(
-                            'UPDATE `users` SET `wallet` = ? WHERE `id` = ?',
-                            [id.toString(), newInteraction.user.id]
-                        );
-                    }
+                    const newInteraction = await dm.awaitMessageComponent({
+                        filter: (newInteraction) =>
+                            newInteraction.customId === 'wallet' &&
+                            newInteraction.user.id === interaction.user.id,
+                    });
+                    if (!(newInteraction instanceof SelectMenuInteraction))
+                        return;
+                    await message.edit({
+                        components: [
+                            {
+                                type: 'ACTION_ROW',
+                                components: [
+                                    {
+                                        type: 'SELECT_MENU',
+                                        customId: 'wallet',
+                                        placeholder: 'Select wallet',
+                                        options: wallets.map((wallet: any) => {
+                                            return {
+                                                label: wallet.name,
+                                                value: wallet.name,
+                                                default:
+                                                    wallet.name ===
+                                                    newInteraction.values[0],
+                                                description: wallet.address,
+                                            };
+                                        }),
+                                        disabled: true,
+                                    },
+                                ],
+                            },
+                        ],
+                    });
+                    await newInteraction.reply(
+                        `Now using the wallet you selected: ${newInteraction.values[0]}`
+                    );
+                    const [[{ id }]]: [[{ id: number }]] = (await db.execute(
+                        'SELECT `id` FROM `wallets` WHERE `name` = ? AND `user` = ?',
+                        [newInteraction.values[0], newInteraction.user.id]
+                    )) as any;
+                    await db.execute(
+                        'UPDATE `users` SET `wallet` = ? WHERE `id` = ?',
+                        [id.toString(), newInteraction.user.id]
+                    );
                     break;
                 }
                 case 'balance': {
@@ -428,7 +452,7 @@ client.on('interactionCreate', async (interaction) => {
                             'No wallet is currently selected.'
                         );
                     const {
-                        data: { balance, fork },
+                        data: { success: balanceSuccess, balance, fork },
                     } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'https://localhost/api/v1'
@@ -439,7 +463,22 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
+                    if (!balanceSuccess)
+                        return await interaction.reply(
+                            'Could not fetch the balance.'
+                        );
+                    let dm;
+                    try {
+                        dm = await interaction.user.createDM();
+                    } catch {
+                        return await interaction.reply(
+                            'Could not open your direct messages.'
+                        );
+                    }
                     await interaction.reply(
+                        'Check your direct messages to continue.'
+                    );
+                    await dm.send(
                         `Your wallet currently has ${(
                             balance *
                             10 ** -fork.precision
@@ -458,7 +497,18 @@ client.on('interactionCreate', async (interaction) => {
                         return await interaction.reply(
                             'No wallet is currently selected.'
                         );
+                    let dm;
+                    try {
+                        dm = await interaction.user.createDM();
+                    } catch {
+                        return await interaction.reply(
+                            'Could not open your direct messages.'
+                        );
+                    }
                     await interaction.reply(
+                        'Check your direct messages to continue.'
+                    );
+                    await dm.send(
                         `Your receive address for this wallet: ${wallet.address}`
                     );
                     break;
@@ -473,7 +523,11 @@ client.on('interactionCreate', async (interaction) => {
                             'No wallet is currently selected.'
                         );
                     const {
-                        data: { transactions, fork },
+                        data: {
+                            success: transactionsSuccess,
+                            transactions,
+                            fork,
+                        },
                     } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'https://localhost/api/v1'
@@ -484,6 +538,10 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
+                    if (!transactionsSuccess)
+                        return await interaction.reply(
+                            'Could not fetch the transactions.'
+                        );
                     if (!transactions.length)
                         return await interaction.reply(
                             'There are no transactions on this wallet yet.'
@@ -522,7 +580,18 @@ client.on('interactionCreate', async (interaction) => {
                                 .join('\n\n'),
                         };
                     };
-                    await interaction.reply(makePage(page));
+                    let dm;
+                    try {
+                        dm = await interaction.user.createDM();
+                    } catch {
+                        return await interaction.reply(
+                            'Could not open your direct messages.'
+                        );
+                    }
+                    await interaction.reply(
+                        'Check your direct messages to continue.'
+                    );
+                    await dm.send(makePage(page));
                     break;
                 }
                 case 'send': {
@@ -581,25 +650,23 @@ client.on('interactionCreate', async (interaction) => {
                         await dm.send('That is not the correct password.');
                         return;
                     }
-                    let fork: any;
-                    try {
-                        ({
-                            data: { fork },
-                        } = await axios({
-                            method: 'POST',
-                            url: `${
-                                process.env.ARBOR_API ??
-                                'https://localhost/api/v1'
-                            }/transactions`,
+                    const {
+                        data: { success: sendSuccess, error: sendError },
+                    } = await axios.get(
+                        `${
+                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                        }/send`,
+                        {
                             data: {
                                 private_key: wallet.private_key,
                                 amount: +amount * 10 ** 12,
                                 destination,
                             },
-                        }));
-                    } catch (error) {
+                        }
+                    );
+                    if (!sendSuccess) {
                         await dm.send(
-                            `Could not complete the transaction: ${error.response.data}`
+                            `Could not complete the transaction: ${sendError}`
                         );
                         return;
                     }
