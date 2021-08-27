@@ -234,7 +234,7 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 }
                 case 'recover': {
-                    const name = interaction.options.getString('name', true);
+                    const name = interaction.options.getString('wallet', true);
                     if (name.length > 64)
                         return await interaction.reply(
                             'The wallet name must be 64 characters or less.'
