@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "downlevelIteration": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitAny": true,
+        "noImplicitOverride": true,
+        "noImplicitThis": true,
+        "noFallthroughCasesInSwitch": true,
+        "outDir": "dist",
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "strict": true
+    },
+    "include": ["src/**/*"]
+}
