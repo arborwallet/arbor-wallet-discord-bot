@@ -576,7 +576,7 @@ client.on('interactionCreate', async (interaction) => {
                         return;
                     }
                     if (!transactions.length) {
-                        await interaction.reply(
+                        await interaction.editReply(
                             'There are no transactions on this wallet yet.'
                         );
                         return;
