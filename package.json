@@ -1,5 +1,5 @@
 {
-    "name": "wallet-bot",
+    "name": "arbor-bot",
     "version": "1.0.0",
     "private": true,
     "description": "An implementation of ArborWallet for Discord.",

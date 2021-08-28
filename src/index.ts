@@ -33,8 +33,9 @@ async function ensureUser(id: string) {
         'SELECT COUNT(*) AS `count` FROM `users` WHERE `id` = ?',
         [id]
     )) as any;
-    if (+count === 0)
+    if (+count === 0) {
         await db.execute('INSERT INTO `users` (`id`) VALUES (?)', [id]);
+    }
 }
 
 client.on('interactionCreate', async (interaction) => {
@@ -42,38 +43,31 @@ client.on('interactionCreate', async (interaction) => {
         try {
             switch (interaction.commandName) {
                 case 'create': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const name = interaction.options.getString('wallet', true);
-                    if (name.length > 64)
+                    if (name.length > 64) {
                         return await interaction.reply(
                             'The wallet name must be 64 characters or less.'
                         );
+                    }
                     const [[{ count }]]: [[{ count: string }]] =
                         (await db.execute(
                             'SELECT COUNT(*) AS `count` FROM `wallets` WHERE `user` = ? AND `name` = ?',
                             [interaction.user.id, name]
                         )) as any;
-                    if (+count > 0)
+                    if (+count > 0) {
                         return await interaction.reply(
                             'You already have a wallet with that name.'
                         );
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                        await (dm.id === interaction.channelId
-                            ? interaction.reply.bind(interaction)
-                            : dm.send.bind(dm))(
-                            'What password do you want to use for this wallet?'
-                        );
-                    } catch {
-                        return await interaction.reply(
-                            'Could not open your direct messages.'
-                        );
                     }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.reply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
+                    await interaction.reply(
+                        'What password do you want to use for this wallet?'
+                    );
                     let password;
                     try {
                         const result = await dm.awaitMessages({
@@ -123,7 +117,7 @@ client.on('interactionCreate', async (interaction) => {
                             },
                         }
                     );
-                    if (!keygenSuccess) {
+                    if (!walletSuccess) {
                         await dm.send('Could not create the wallet.');
                         return;
                     }
@@ -170,37 +164,30 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 }
                 case 'delete': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const name = interaction.options.getString('wallet', true);
-                    if (name.length > 64)
+                    if (name.length > 64) {
                         return await interaction.reply(
                             'The wallet name must be 64 characters or less.'
                         );
+                    }
                     const [[wallet]]: [[any]] = (await db.execute(
                         'SELECT * FROM `wallets` WHERE `user` = ? AND `name` = ?',
                         [interaction.user.id, name]
                     )) as any;
-                    if (!wallet)
+                    if (!wallet) {
                         return await interaction.reply(
                             "You don't have a wallet with that name."
                         );
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                        await (dm.id === interaction.channelId
-                            ? interaction.reply.bind(interaction)
-                            : dm.send.bind(dm))(
-                            `What is the password for the ${wallet.name} wallet?`
-                        );
-                    } catch {
-                        return await interaction.reply(
-                            'Could not open your direct messages.'
-                        );
                     }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.reply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
+                    await interaction.reply(
+                        `What is the password for the ${wallet.name} wallet?`
+                    );
                     let password;
                     try {
                         const result = await dm.awaitMessages({
@@ -234,38 +221,31 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 }
                 case 'recover': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const name = interaction.options.getString('wallet', true);
-                    if (name.length > 64)
+                    if (name.length > 64) {
                         return await interaction.reply(
                             'The wallet name must be 64 characters or less.'
                         );
+                    }
                     const [[{ count }]]: [[{ count: string }]] =
                         (await db.execute(
                             'SELECT COUNT(*) AS `count` FROM `wallets` WHERE `user` = ? AND `name` = ?',
                             [interaction.user.id, name]
                         )) as any;
-                    if (+count > 0)
+                    if (+count > 0) {
                         return await interaction.reply(
                             'You already have a wallet with that name.'
                         );
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                        await (dm.id === interaction.channelId
-                            ? interaction.reply.bind(interaction)
-                            : dm.send.bind(dm))(
-                            'What is the mnemonic phrase you would like to recover?'
-                        );
-                    } catch {
-                        return await interaction.reply(
-                            'Could not open your direct messages.'
-                        );
                     }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.reply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
+                    await interaction.reply(
+                        'What is the mnemonic phrase you would like to recover?'
+                    );
                     let phrase;
                     try {
                         const result = await dm.awaitMessages({
@@ -362,6 +342,12 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 }
                 case 'wallet': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const [wallets]: any[][] = await db.execute(
                         'SELECT * FROM `wallets` WHERE `user` = ?',
                         [interaction.user.id]
@@ -370,26 +356,12 @@ client.on('interactionCreate', async (interaction) => {
                         'SELECT * FROM `users` WHERE `id` = ?',
                         [interaction.user.id]
                     );
-                    if (!user || !wallets.length)
+                    if (!user || !wallets.length) {
                         return await interaction.reply(
                             'You have not created an Arbor wallet.'
                         );
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                    } catch {
-                        return await interaction.reply(
-                            'Could not open your direct messages.'
-                        );
                     }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.reply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
-                    const message = await (dm.id === interaction.channelId
-                        ? interaction.reply.bind(interaction)
-                        : dm.send.bind(dm))({
+                    await interaction.reply({
                         content: 'Select which wallet to use.',
                         components: [
                             {
@@ -418,9 +390,10 @@ client.on('interactionCreate', async (interaction) => {
                             newInteraction.customId === 'wallet' &&
                             newInteraction.user.id === interaction.user.id,
                     });
-                    if (!(newInteraction instanceof SelectMenuInteraction))
+                    if (!(newInteraction instanceof SelectMenuInteraction)) {
                         return;
-                    await (message ? message.edit : interaction.editReply)({
+                    }
+                    await interaction.editReply({
                         components: [
                             {
                                 type: 'ACTION_ROW',
@@ -459,6 +432,12 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 }
                 case 'balance': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const [[wallet]]: [[any]] = (await db.execute(
                         'SELECT * FROM `wallets` WHERE `id` = (SELECT `wallet` FROM `users` WHERE `id` = ?)',
                         [interaction.user.id]
@@ -487,23 +466,7 @@ client.on('interactionCreate', async (interaction) => {
                         );
                         return;
                     }
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                    } catch {
-                        await interaction.editReply(
-                            'Could not open your direct messages.'
-                        );
-                        return;
-                    }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.editReply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
-                    await (dm.id !== interaction.channelId
-                        ? dm.send.bind(dm)
-                        : interaction.editReply.bind(interaction))(
+                    await interaction.editReply(
                         `Your wallet currently has ${(
                             balance *
                             10 ** -fork.precision
@@ -514,35 +477,33 @@ client.on('interactionCreate', async (interaction) => {
                     break;
                 }
                 case 'receive': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const [[wallet]]: [[any]] = (await db.execute(
                         'SELECT * FROM `wallets` WHERE `id` = (SELECT `wallet` FROM `users` WHERE `id` = ?)',
                         [interaction.user.id]
                     )) as any;
-                    if (!wallet)
+                    if (!wallet) {
                         return await interaction.reply(
                             'No wallet is currently selected.'
                         );
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                    } catch {
-                        return await interaction.reply(
-                            'Could not open your direct messages.'
-                        );
                     }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.reply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
-                    await (dm.id !== interaction.channelId
-                        ? dm.send.bind(dm)
-                        : interaction.reply.bind(interaction))(
+                    await interaction.reply(
                         `Your receive address for this wallet: ${wallet.address}`
                     );
                     break;
                 }
                 case 'transactions': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const [[wallet]]: [[any]] = (await db.execute(
                         'SELECT * FROM `wallets` WHERE `id` = (SELECT `wallet` FROM `users` WHERE `id` = ?)',
                         [interaction.user.id]
@@ -615,28 +576,16 @@ client.on('interactionCreate', async (interaction) => {
                                 .join('\n\n'),
                         };
                     };
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                    } catch {
-                        await interaction.editReply(
-                            'Could not open your direct messages.'
-                        );
-                        return;
-                    }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.editReply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
-                    await (dm.id !== interaction.channelId
-                        ? dm.send.bind(dm)
-                        : interaction.editReply.bind(interaction))(
-                        makePage(page)
-                    );
+                    await interaction.editReply(makePage(page));
                     break;
                 }
                 case 'send': {
+                    const dm = await interaction.user.createDM();
+                    if (interaction.channelId !== dm.id) {
+                        return await interaction.reply(
+                            'Please run this command in direct messages with the bot for security.'
+                        );
+                    }
                     const amount = interaction.options.getString(
                         'amount',
                         true
@@ -654,24 +603,9 @@ client.on('interactionCreate', async (interaction) => {
                             'No wallet is currently selected.'
                         );
                     }
-                    let dm;
-                    try {
-                        dm = await interaction.user.createDM();
-                        await (dm.id !== interaction.channelId
-                            ? dm.send.bind(dm)
-                            : interaction.reply.bind(interaction))(
-                            `What is the password for the ${wallet.name} wallet?`
-                        );
-                    } catch {
-                        return await interaction.reply(
-                            'Could not open your direct messages.'
-                        );
-                    }
-                    if (dm.id !== interaction.channelId) {
-                        await interaction.reply(
-                            'Check your direct messages to continue.'
-                        );
-                    }
+                    await interaction.reply(
+                        `What is the password for the ${wallet.name} wallet?`
+                    );
                     let password;
                     try {
                         const result = await dm.awaitMessages({
