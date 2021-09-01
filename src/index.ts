@@ -95,29 +95,27 @@ client.on('interactionCreate', async (interaction) => {
                             private_key,
                             public_key,
                         },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/keygen`,
-                        data: {},
-                    });
+                        {}
+                    );
                     if (!keygenSuccess) {
                         await dm.send('Could not generate the keypair.');
                         return;
                     }
                     const {
                         data: { success: walletSuccess, address },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/wallet`,
-                        data: {
+                        {
                             public_key,
                             fork: 'xch',
-                        },
-                    });
+                        }
+                    );
                     if (!walletSuccess) {
                         await dm.send('Could not create the wallet.');
                         return;
@@ -290,31 +288,29 @@ client.on('interactionCreate', async (interaction) => {
                             private_key,
                             public_key,
                         },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/recover`,
-                        data: {
+                        {
                             phrase: phrase.content,
-                        },
-                    });
+                        }
+                    );
                     if (!recoverSuccess) {
                         await dm.send('Could not recover the keypair.');
                         return;
                     }
                     const {
                         data: { success: walletSuccess, address },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/wallet`,
-                        data: {
+                        {
                             public_key,
                             fork: 'xch',
-                        },
-                    });
+                        }
+                    );
                     if (!walletSuccess) {
                         await dm.send('Could not recover the wallet.');
                         return;
@@ -449,15 +445,14 @@ client.on('interactionCreate', async (interaction) => {
                     await interaction.deferReply();
                     const {
                         data: { success: balanceSuccess, balance, fork },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/balance`,
-                        data: {
+                        {
                             address: wallet.address,
-                        },
-                    });
+                        }
+                    );
                     if (!balanceSuccess) {
                         await interaction.editReply(
                             'Could not fetch the balance.'
@@ -518,15 +513,14 @@ client.on('interactionCreate', async (interaction) => {
                             transactions,
                             fork,
                         },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/transactions`,
-                        data: {
+                        {
                             address: wallet.address,
-                        },
-                    });
+                        }
+                    );
                     if (!transactionsSuccess) {
                         await interaction.editReply(
                             'Could not fetch the transactions.'
@@ -629,17 +623,16 @@ client.on('interactionCreate', async (interaction) => {
                     }
                     const {
                         data: { success: sendSuccess, error: sendError },
-                    } = await axios({
-                        method: 'POST',
-                        url: `${
-                            process.env.ARBOR_API ?? 'https://localhost/api/v1'
+                    } = await axios.post(
+                        `${
+                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
                         }/send`,
-                        data: {
+                        {
                             private_key: wallet.private_key,
                             amount: +amount * 10 ** 12,
                             destination,
-                        },
-                    });
+                        }
+                    );
                     if (!sendSuccess) {
                         await dm.send(
                             `Could not complete the transaction: ${sendError}`
