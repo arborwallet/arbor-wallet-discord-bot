@@ -95,11 +95,10 @@ client.on('interactionCreate', async (interaction) => {
                             private_key,
                             public_key,
                         },
-                    } = await axios.post(
+                    } = await axios.get(
                         `${
                             process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/keygen`,
-                        {}
+                        }/keygen`
                     );
                     if (!keygenSuccess) {
                         await dm.send('Could not generate the keypair.');
