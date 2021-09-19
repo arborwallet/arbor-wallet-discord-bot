@@ -3,7 +3,7 @@ import {
     Client,
     CommandInteraction,
     Intents,
-    SelectMenuInteraction,
+    SelectMenuInteraction
 } from 'discord.js';
 import db from './database';
 
@@ -649,6 +649,9 @@ client.on('interactionCreate', async (interaction) => {
             }
         } catch (error) {
             console.error(error);
+            if (!interaction.replied) {
+                await interaction.reply('An error occurred while trying to run this command.');
+            }
         }
     }
 });
