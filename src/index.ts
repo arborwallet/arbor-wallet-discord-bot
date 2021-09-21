@@ -16,6 +16,13 @@ export const client = new Client({
     partials: ['CHANNEL'],
 });
 
+interface Fork {
+    name: string;
+    ticker: string;
+    unit: string;
+    precision: number;
+}
+
 client.once('ready', async () => {
     client.user!.setPresence({
         activities: [
@@ -76,7 +83,8 @@ client.on('interactionCreate', async (interaction) => {
                             max: 1,
                         });
                         password = result.first()!;
-                    } catch {
+                    } catch (error) {
+                        console.error(error);
                         await dm.send(
                             'The command has been cancelled due to inactivity.'
                         );
@@ -88,34 +96,39 @@ client.on('interactionCreate', async (interaction) => {
                         );
                         return;
                     }
-                    const {
-                        data: {
-                            success: keygenSuccess,
-                            phrase,
-                            private_key,
-                            public_key,
-                        },
-                    } = await axios.get(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/keygen`
-                    );
-                    if (!keygenSuccess) {
+                    let phrase: string;
+                    let private_key: string;
+                    let public_key: string;
+                    try {
+                        ({
+                            data: { phrase, private_key, public_key },
+                        } = await axios.get(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/keygen`
+                        ));
+                    } catch (error) {
+                        console.error(error);
                         await dm.send('Could not generate the keypair.');
                         return;
                     }
-                    const {
-                        data: { success: walletSuccess, address },
-                    } = await axios.post(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/wallet`,
-                        {
-                            public_key,
-                            fork: 'xch',
-                        }
-                    );
-                    if (!walletSuccess) {
+                    let address: string;
+                    try {
+                        ({
+                            data: { address },
+                        } = await axios.post(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/wallet`,
+                            {
+                                public_key,
+                                fork: 'xch',
+                            }
+                        ));
+                    } catch (error) {
+                        console.error(error);
                         await dm.send('Could not create the wallet.');
                         return;
                     }
@@ -194,7 +207,8 @@ client.on('interactionCreate', async (interaction) => {
                             max: 1,
                         });
                         password = result.first()!;
-                    } catch {
+                    } catch (error) {
+                        console.error(error);
                         await dm.send(
                             'The command has been cancelled due to inactivity.'
                         );
@@ -252,7 +266,8 @@ client.on('interactionCreate', async (interaction) => {
                             max: 1,
                         });
                         phrase = result.first()!;
-                    } catch {
+                    } catch (error) {
+                        console.error(error);
                         await dm.send(
                             'The command has been cancelled due to inactivity.'
                         );
@@ -269,7 +284,8 @@ client.on('interactionCreate', async (interaction) => {
                             max: 1,
                         });
                         password = result.first()!;
-                    } catch {
+                    } catch (error) {
+                        console.error(error);
                         await dm.send(
                             'The command has been cancelled due to inactivity.'
                         );
@@ -281,36 +297,41 @@ client.on('interactionCreate', async (interaction) => {
                         );
                         return;
                     }
-                    const {
-                        data: {
-                            success: recoverSuccess,
-                            private_key,
-                            public_key,
-                        },
-                    } = await axios.post(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/recover`,
-                        {
-                            phrase: phrase.content,
-                        }
-                    );
-                    if (!recoverSuccess) {
+                    let private_key: string;
+                    let public_key: string;
+                    try {
+                        ({
+                            data: { private_key, public_key },
+                        } = await axios.post(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/recover`,
+                            {
+                                phrase: phrase.content,
+                            }
+                        ));
+                    } catch (error) {
+                        console.error(error);
                         await dm.send('Could not recover the keypair.');
                         return;
                     }
-                    const {
-                        data: { success: walletSuccess, address },
-                    } = await axios.post(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/wallet`,
-                        {
-                            public_key,
-                            fork: 'xch',
-                        }
-                    );
-                    if (!walletSuccess) {
+                    let address: string;
+                    try {
+                        ({
+                            data: { address },
+                        } = await axios.post(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/wallet`,
+                            {
+                                public_key,
+                                fork: 'xch',
+                            }
+                        ));
+                    } catch (error) {
+                        console.error(error);
                         await dm.send('Could not recover the wallet.');
                         return;
                     }
@@ -442,17 +463,22 @@ client.on('interactionCreate', async (interaction) => {
                         );
                     }
                     await interaction.deferReply();
-                    const {
-                        data: { success: balanceSuccess, balance, fork },
-                    } = await axios.post(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/balance`,
-                        {
-                            address: wallet.address,
-                        }
-                    );
-                    if (!balanceSuccess) {
+                    let balance: number;
+                    let fork: Fork;
+                    try {
+                        ({
+                            data: { balance, fork },
+                        } = await axios.post(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/balance`,
+                            {
+                                address: wallet.address,
+                            }
+                        ));
+                    } catch (error) {
+                        console.error(error);
                         await interaction.editReply(
                             'Could not fetch the balance.'
                         );
@@ -506,21 +532,22 @@ client.on('interactionCreate', async (interaction) => {
                         );
                     }
                     await interaction.deferReply();
-                    const {
-                        data: {
-                            success: transactionsSuccess,
-                            transactions,
-                            fork,
-                        },
-                    } = await axios.post(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/transactions`,
-                        {
-                            address: wallet.address,
-                        }
-                    );
-                    if (!transactionsSuccess) {
+                    let transactions: any;
+                    let fork: Fork;
+                    try {
+                        ({
+                            data: { transactions, fork },
+                        } = await axios.post(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/transactions`,
+                            {
+                                address: wallet.address,
+                            }
+                        ));
+                    } catch (error) {
+                        console.error(error);
                         await interaction.editReply(
                             'Could not fetch the transactions.'
                         );
@@ -604,7 +631,8 @@ client.on('interactionCreate', async (interaction) => {
                             max: 1,
                         });
                         password = result.first()!;
-                    } catch {
+                    } catch (error) {
+                        console.error(error);
                         await dm.send(
                             'The command has been cancelled due to inactivity.'
                         );
@@ -620,22 +648,21 @@ client.on('interactionCreate', async (interaction) => {
                         await dm.send('That is not the correct password.');
                         return;
                     }
-                    const {
-                        data: { success: sendSuccess, error: sendError },
-                    } = await axios.post(
-                        `${
-                            process.env.ARBOR_API ?? 'http://localhost/api/v1'
-                        }/send`,
-                        {
-                            private_key: wallet.private_key,
-                            amount: +amount * 10 ** 12,
-                            destination,
-                        }
-                    );
-                    if (!sendSuccess) {
-                        await dm.send(
-                            `Could not complete the transaction: ${sendError}`
+                    try {
+                        await axios.post(
+                            `${
+                                process.env.ARBOR_API ??
+                                'http://localhost/api/v1'
+                            }/send`,
+                            {
+                                private_key: wallet.private_key,
+                                amount: +amount * 10 ** 12,
+                                destination,
+                            }
                         );
+                    } catch (error) {
+                        console.error(error);
+                        await dm.send('Could not complete the transaction.');
                         return;
                     }
                     await dm.send(
@@ -649,9 +676,6 @@ client.on('interactionCreate', async (interaction) => {
             }
         } catch (error) {
             console.error(error);
-            if (!interaction.replied) {
-                await interaction.reply('An error occurred while trying to run this command.');
-            }
         }
     }
 });
