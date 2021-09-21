@@ -1,0 +1,92 @@
+[
+    {
+        "type": "CHAT_INPUT",
+        "name": "create",
+        "description": "Creates a new wallet.",
+        "options": [
+            {
+                "type": "STRING",
+                "name": "wallet",
+                "description": "The name of the wallet.",
+                "required": true
+            }
+        ],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "delete",
+        "description": "Removes a wallet from the bot.",
+        "options": [
+            {
+                "type": "STRING",
+                "name": "wallet",
+                "description": "The name of the wallet.",
+                "required": true
+            }
+        ],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "recover",
+        "description": "Adds a wallet to the bot.",
+        "options": [
+            {
+                "type": "STRING",
+                "name": "wallet",
+                "description": "The name of the wallet.",
+                "required": true
+            }
+        ],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "balance",
+        "description": "Shows your current balance.",
+        "options": [],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "transactions",
+        "description": "Shows a list of transactions.",
+        "options": [],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "receive",
+        "description": "Shows your receive address.",
+        "options": [],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "send",
+        "description": "Sends an amount to a destination.",
+        "options": [
+            {
+                "type": "STRING",
+                "name": "amount",
+                "description": "The amount to send.",
+                "required": true
+            },
+            {
+                "type": "STRING",
+                "name": "destination",
+                "description": "The destination address.",
+                "required": true
+            }
+        ],
+        "defaultPermission": true
+    },
+    {
+        "type": "CHAT_INPUT",
+        "name": "wallet",
+        "description": "Shows a list of wallets.",
+        "options": [],
+        "defaultPermission": true
+    }
+]
